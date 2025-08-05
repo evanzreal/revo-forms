@@ -85,7 +85,7 @@ export default function OfertaPage() {
             <div className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-cyan-400 mb-2 break-words leading-tight">
               {valorOferta}
             </div>
-            <p className="text-slate-300 text-sm">Valor especial de renovação</p>
+            <p className="text-slate-300 text-sm">*Oferta à vista. O valor parcelado terá juros.</p>
           </div>
         )}
 
