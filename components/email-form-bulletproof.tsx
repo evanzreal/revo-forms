@@ -35,7 +35,7 @@ export function EmailFormBulletproof() {
       // TENTATIVA 1: Webhook direto
       addDebug("🌐 CHAMANDO WEBHOOK DIRETO...")
 
-      const webhookUrl = "https://hook.us2.make.com/la80crrjbydbis49hmcwcbijd2iw8jgg"
+      const webhookUrl = "https://hook.us2.make.com/eliye1ga4lft52hgp86w5g3neleyyidg"
       addDebug(`🔗 URL: ${webhookUrl}`)
 
       const webhookPayload = {
@@ -99,36 +99,35 @@ export function EmailFormBulletproof() {
 
         addDebug(`🔍 Email encontrado? ${isFound}`)
 
-        // BUSCA POR VALORES EM TODOS OS CAMPOS POSSÍVEIS
-        const possibleValues = [
-          result.valor,
-          result.price,
-          result.amount,
-          result.oferta,
-          result.preco,
-          result.value,
+        // BUSCA POR LINKS EM TODOS OS CAMPOS POSSÍVEIS
+        const possibleLinks = [
+          result.link,
+          result.url,
+          result.checkout_url,
+          result.payment_link,
+          result.purchase_link,
+          result.offer_link
         ].filter(Boolean)
 
-        addDebug(`💰 Valores encontrados: ${JSON.stringify(possibleValues)}`)
+        addDebug(`🔗 Links encontrados: ${JSON.stringify(possibleLinks)}`)
 
-        const valorOferta =
-          possibleValues.find(
-            (valor) =>
-              valor && typeof valor === "string" && (valor.includes("R$") || valor.includes("$") || /\d/.test(valor)),
-          ) || ""
+        const linkOferta = possibleLinks.find(
+          (link) =>
+            link && typeof link === "string" && link.includes("http")
+        ) || ""
 
-        addDebug(`🎯 Valor final selecionado: ${valorOferta}`)
+        addDebug(`🎯 Link final selecionado: ${linkOferta}`)
 
         if (isFound) {
-          if (valorOferta) {
-            addDebug("✅ SUCESSO! Redirecionando para oferta com valor...")
+          if (linkOferta) {
+            addDebug("✅ SUCESSO! Redirecionando para oferta com link...")
             setTimeout(() => {
-              window.location.href = `/oferta?valor=${encodeURIComponent(valorOferta)}`
+              window.location.href = `/oferta?link=${encodeURIComponent(linkOferta)}`
             }, 2000)
           } else {
-            addDebug("⚠️ Email encontrado mas sem valor válido")
+            addDebug("⚠️ Email encontrado mas sem link válido")
             setTimeout(() => {
-              window.location.href = "/oferta"
+              window.location.href = "/nao-encontrado"
             }, 2000)
           }
         } else {

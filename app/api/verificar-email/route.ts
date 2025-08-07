@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
         const controller = new AbortController()
         const timeoutId = setTimeout(() => controller.abort(), 10000)
 
-        const webhookResponse = await fetch("https://hook.us2.make.com/la80crrjbydbis49hmcwcbijd2iw8jgg", {
+        const webhookResponse = await fetch("https://hook.us2.make.com/eliye1ga4lft52hgp86w5g3neleyyidg", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -74,41 +74,36 @@ export async function POST(request: NextRequest) {
           const responseText = await webhookResponse.text()
           console.log("🎯 WEBHOOK OK! Response:", responseText)
 
-          let result = {}
-          let valor = ""
+          let link = ""
 
           try {
-            result = JSON.parse(responseText)
+            const result = JSON.parse(responseText)
             console.log("📊 Parsed result:", result)
 
-            // PEGA O VALOR DA CHAVE "Oferta Especial" PRIMEIRO
-            if (result["Oferta Especial"]) {
-              valor = result["Oferta Especial"]
-              console.log("💰 Valor encontrado em 'Oferta Especial':", valor)
-            } else {
-              // FALLBACK: BUSCA EM OUTROS CAMPOS
-              valor =
-                result.valor ||
-                result.price ||
-                result.amount ||
-                result.oferta ||
-                result.preco ||
-                result.value ||
-                result.offer ||
-                result.discount ||
-                ""
-            }
+            // BUSCAR O LINK EM DIFERENTES CAMPOS POSSÍVEIS
+            link = result.link || result.url || result.checkout_url || result.payment_link || result.purchase_link || ""
           } catch (parseError) {
             console.log("⚠️ Parse error mas webhook OK = ENCONTRADO")
-            // Parse error não importa se webhook retornou 200
+            // Se não conseguir fazer parse, tentar extrair link do texto
+            const linkMatch = responseText.match(/https?:\/\/[^\s]+/gi)
+            if (linkMatch && linkMatch[0]) {
+              link = linkMatch[0]
+            }
           }
 
-          // SE WEBHOOK RETORNOU 200 = SEMPRE ENCONTRADO
-          return NextResponse.json({
-            found: true,
-            valor: valor || "Consulte o atendimento",
-            attempt: attempt + 1,
-          })
+          // SE WEBHOOK RETORNOU 200 E TEM LINK = ENCONTRADO
+          if (link && link.trim() !== "") {
+            return NextResponse.json({
+              found: true,
+              link: link,
+              attempt: attempt + 1,
+            })
+          } else {
+            return NextResponse.json({
+              found: false,
+              error: "Link não encontrado",
+            })
+          }
         } else if (webhookResponse.status === 404 || webhookResponse.status === 400) {
           return NextResponse.json({
             found: false,

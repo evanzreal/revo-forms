@@ -52,7 +52,7 @@ export function TestSuite() {
     addResult("🌐 TESTANDO WEBHOOK DIRETAMENTE")
 
     try {
-      const webhookUrl = "https://hook.us2.make.com/la80crrjbydbis49hmcwcbijd2iw8jgg"
+      const webhookUrl = "https://hook.us2.make.com/eliye1ga4lft52hgp86w5g3neleyyidg"
 
       const response = await fetch(webhookUrl, {
         method: "POST",
@@ -110,6 +110,7 @@ export function TestSuite() {
 
     // Teste 3: Navegação
     testNavigation()
+    await new Promise((resolve) => setTimeout(resolve, 500))
 
     addResult("🏁 TESTES CONCLUÍDOS")
     setIsRunning(false)

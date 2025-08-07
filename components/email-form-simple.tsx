@@ -23,7 +23,7 @@ export function EmailFormSimple() {
     setIsLoading(true)
 
     try {
-      const response = await fetch("https://hook.us2.make.com/la80crrjbydbis49hmcwcbijd2iw8jgg", {
+      const response = await fetch("https://hook.us2.make.com/eliye1ga4lft52hgp86w5g3neleyyidg", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -38,35 +38,26 @@ export function EmailFormSimple() {
         const responseText = await response.text()
         console.log("✅ WEBHOOK OK! Response:", responseText)
 
-        let valor = ""
+        let link = ""
 
         try {
           const result = JSON.parse(responseText)
 
-          // PEGA O VALOR DA CHAVE "Oferta Especial" PRIMEIRO
-          if (result["Oferta Especial"]) {
-            valor = result["Oferta Especial"]
-          } else {
-            // FALLBACK: BUSCA EM OUTROS CAMPOS
-            valor =
-              result.valor ||
-              result.price ||
-              result.amount ||
-              result.oferta ||
-              result.preco ||
-              result.value ||
-              result.offer ||
-              ""
-          }
+          // BUSCAR O LINK EM DIFERENTES CAMPOS
+          link = result.link || result.url || result.checkout_url || result.payment_link || result.purchase_link || ""
         } catch {
-          // Não importa se não conseguir fazer parse
+          // Se não conseguir fazer parse, tentar extrair link do texto
+          const linkMatch = responseText.match(/https?:\/\/[^\s]+/gi)
+          if (linkMatch && linkMatch[0]) {
+            link = linkMatch[0]
+          }
         }
 
-        // WEBHOOK OK = SEMPRE ENCONTRADO
-        if (valor) {
-          window.location.href = `/oferta?valor=${encodeURIComponent(valor)}`
+        // WEBHOOK OK = SEMPRE ENCONTRADO SE TEM LINK
+        if (link && link.includes("http")) {
+          window.location.href = `/oferta?link=${encodeURIComponent(link)}`
         } else {
-          window.location.href = "/oferta?valor=Consulte%20o%20atendimento"
+          window.location.href = "/nao-encontrado"
         }
       } else {
         console.log("❌ Webhook erro:", response.status)

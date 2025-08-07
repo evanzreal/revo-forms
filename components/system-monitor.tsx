@@ -40,7 +40,7 @@ export function SystemMonitor() {
 
   const checkWebhook = async () => {
     try {
-      const response = await fetch("https://hook.us2.make.com/la80crrjbydbis49hmcwcbijd2iw8jgg", {
+      const response = await fetch("https://hook.us2.make.com/eliye1ga4lft52hgp86w5g3neleyyidg", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

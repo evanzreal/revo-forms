@@ -51,15 +51,15 @@ export default function TestesPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 md:gap-6 mb-4 sm:mb-6 md:mb-8">
           {/* Testes Automatizados */}
           <TestSuite />
+        </div>
 
-          {/* Teste Manual do Cronômetro */}
-          <div className="p-3 sm:p-4 md:p-6 bg-gray-900 text-white rounded-lg">
-            <h2 className="text-base sm:text-lg md:text-xl font-bold mb-2 sm:mb-4">⏰ Teste do&nbsp;Cronômetro</h2>
-            <CountdownTimer />
-            <p className="text-xs sm:text-sm text-gray-400 mt-2 sm:mt-4">
-              ✅ Cronômetro deve atualizar a cada&nbsp;segundo
-            </p>
-          </div>
+        {/* Teste Manual do Cronômetro */}
+        <div className="p-3 sm:p-4 md:p-6 bg-gray-900 text-white rounded-lg">
+          <h2 className="text-base sm:text-lg md:text-xl font-bold mb-2 sm:mb-4">⏰ Teste do&nbsp;Cronômetro</h2>
+          <CountdownTimer />
+          <p className="text-xs sm:text-sm text-gray-400 mt-2 sm:mt-4">
+            ✅ Cronômetro deve atualizar a cada&nbsp;segundo
+          </p>
         </div>
 
         {/* Checklist Manual */}

@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button"
 import { CountdownTimer } from "@/components/countdown-timer"
-import { Check } from "lucide-react"
+import { Check } from 'lucide-react'
 import Link from "next/link"
 import Image from "next/image"
 import { useSearchParams } from "next/navigation"
@@ -10,7 +10,7 @@ import { useState, useEffect, useMemo } from "react"
 
 export default function OfertaPage() {
   const searchParams = useSearchParams()
-  const [valorOferta, setValorOferta] = useState("")
+  const [linkOferta, setLinkOferta] = useState("")
 
   const whatsappLink =
     "https://wa.me/5541991411604?text=Oi!%20Estou%20com%20d%C3%BAvidas%20sobre%20a%20renova%C3%A7%C3%A3o%20das%20assinaturas%2C%20pode%20me%20ajudar%3F"
@@ -28,10 +28,10 @@ export default function OfertaPage() {
   )
 
   useEffect(() => {
-    const valorFromParams = searchParams.get("valor")
+    const linkFromParams = searchParams.get("link")
 
-    if (valorFromParams && valorFromParams !== "null" && valorFromParams !== "undefined") {
-      setValorOferta(decodeURIComponent(valorFromParams))
+    if (linkFromParams && linkFromParams !== "null" && linkFromParams !== "undefined") {
+      setLinkOferta(decodeURIComponent(linkFromParams))
     } else {
       window.location.href = "/nao-encontrado"
     }
@@ -78,17 +78,6 @@ export default function OfertaPage() {
           DETALHES DA <span className="text-cyan-400">SUA&nbsp;OFERTA</span>
         </h1>
 
-        {/* Valor da Oferta - Maior e com mais destaque */}
-        {valorOferta && (
-          <div className="bg-gradient-to-r from-slate-700 via-slate-600 to-slate-700 rounded-xl p-6 sm:p-8 mb-6 sm:mb-8 text-center shadow-2xl border border-slate-500/20">
-            <p className="text-white text-sm sm:text-base mb-2">Sua oferta exclusiva:</p>
-            <div className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-cyan-400 mb-2 break-words leading-tight">
-              {valorOferta}
-            </div>
-            <p className="text-slate-300 text-sm">*Oferta à vista. O valor parcelado terá juros.</p>
-          </div>
-        )}
-
         {/* Benefits Cards - Mais compactos */}
         <div className="space-y-3 mb-6 sm:mb-8">
           {benefits.map((benefit, index) => (
@@ -107,8 +96,8 @@ export default function OfertaPage() {
             asChild
             className="w-full h-12 bg-cyan-500 hover:bg-cyan-600 text-white font-semibold text-sm transition-colors"
           >
-            <Link href={whatsappLink} target="_blank">
-              Você vai poder comprar no dia 07/08. Precisa de&nbsp;ajuda?
+            <Link href={linkOferta || whatsappLink} target="_blank">
+              {linkOferta ? "Comprar agora com desconto especial" : "Falar com atendimento"}
             </Link>
           </Button>
         </div>

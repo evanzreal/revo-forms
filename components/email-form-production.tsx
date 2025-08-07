@@ -11,21 +11,19 @@ export function EmailFormProduction() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
 
-  const extractValue = (responseText: string): string => {
+  const extractLink = (responseText: string): string => {
     // Tentar JSON parse
     try {
       const result = JSON.parse(responseText)
 
-      // Buscar em chaves específicas
+      // Buscar em chaves específicas de link
       const possibleKeys = [
-        "Oferta Especial",
-        "oferta especial",
-        "valor",
-        "price",
-        "amount",
-        "oferta",
-        "preco",
-        "value",
+        "link",
+        "url", 
+        "checkout_url",
+        "payment_link",
+        "purchase_link",
+        "offer_link"
       ]
 
       for (const key of possibleKeys) {
@@ -34,25 +32,23 @@ export function EmailFormProduction() {
         }
       }
 
-      // Se não encontrou nas chaves, pega o primeiro valor válido
+      // Se não encontrou nas chaves, pega o primeiro valor que pareça um link
       const allValues = Object.values(result).filter(
         (v) =>
           v &&
           v !== null &&
           v !== undefined &&
-          v.toString().trim() !== "" &&
-          v.toString().toLowerCase() !== "null" &&
-          v.toString().toLowerCase() !== "undefined",
+          v.toString().includes("http")
       )
 
       if (allValues.length > 0) {
         return allValues[0].toString()
       }
     } catch (parseError) {
-      // Se não conseguir fazer parse, tenta extrair valor do texto
-      const valorMatch = responseText.match(/R\$\s?[\d.,]+/gi)
-      if (valorMatch && valorMatch[0]) {
-        return valorMatch[0]
+      // Se não conseguir fazer parse, tenta extrair link do texto
+      const linkMatch = responseText.match(/https?:\/\/[^\s]+/gi)
+      if (linkMatch && linkMatch[0]) {
+        return linkMatch[0]
       }
     }
 
@@ -71,7 +67,7 @@ export function EmailFormProduction() {
     setIsLoading(true)
 
     try {
-      const response = await fetch("https://hook.us2.make.com/la80crrjbydbis49hmcwcbijd2iw8jgg", {
+      const response = await fetch("https://hook.us2.make.com/eliye1ga4lft52hgp86w5g3neleyyidg", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -87,13 +83,13 @@ export function EmailFormProduction() {
 
       if (response.ok) {
         const responseText = await response.text()
-        const valor = extractValue(responseText)
+        const link = extractLink(responseText)
 
-        // SÓ VAI PARA OFERTA SE REALMENTE ENCONTROU UM VALOR VÁLIDO
-        if (valor && valor.trim() !== "" && valor.toLowerCase() !== "null") {
-          window.location.href = `/oferta?valor=${encodeURIComponent(valor)}`
+        // SÓ VAI PARA OFERTA SE REALMENTE ENCONTROU UM LINK VÁLIDO
+        if (link && link.trim() !== "" && link.includes("http")) {
+          window.location.href = `/oferta?link=${encodeURIComponent(link)}`
         } else {
-          // SE NÃO ENCONTROU VALOR VÁLIDO = NÃO ENCONTRADO
+          // SE NÃO ENCONTROU LINK VÁLIDO = NÃO ENCONTRADO
           window.location.href = "/nao-encontrado"
         }
       } else {
