@@ -10,6 +10,7 @@ export function EmailFormProduction() {
   const [email, setEmail] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
+  const [retryCount, setRetryCount] = useState(0)
 
   const extractLink = (responseText: string): string => {
     // Tentar JSON parse
@@ -55,6 +56,66 @@ export function EmailFormProduction() {
     return ""
   }
 
+  const callWebhook = async (emailToCheck: string, attempt: number = 1): Promise<{ success: boolean; link?: string; error?: string }> => {
+    try {
+      console.log(`🚀 Tentativa ${attempt} - Chamando webhook para: ${emailToCheck}`)
+
+      // Timeout mais longo para dar tempo ao webhook responder
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 15000) // 15 segundos
+
+      const response = await fetch("https://hook.us2.make.com/eliye1ga4lft52hgp86w5g3neleyyidg", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-make-apikey": "sk_live_a8eP2f5zT7kL9mQvR3dXw6jV0nSbUdFyMZxLgQvKhPtBrC1dW8EeSx9aGhTzRm0L",
+          "User-Agent": "RafaAcademy-Production/1.0",
+          Accept: "application/json",
+          // Headers adicionais para melhor compatibilidade
+          "Cache-Control": "no-cache",
+          "Pragma": "no-cache"
+        },
+        body: JSON.stringify({
+          email: emailToCheck,
+          timestamp: new Date().toISOString(),
+          attempt: attempt,
+          retry: attempt > 1
+        }),
+        signal: controller.signal,
+      })
+
+      clearTimeout(timeoutId)
+
+      console.log(`📡 Tentativa ${attempt} - Status: ${response.status}`)
+
+      if (response.ok) {
+        const responseText = await response.text()
+        console.log(`📄 Tentativa ${attempt} - Resposta: ${responseText}`)
+        
+        const link = extractLink(responseText)
+
+        if (link && link.includes("http")) {
+          console.log(`✅ Tentativa ${attempt} - Link encontrado: ${link}`)
+          return { success: true, link }
+        } else {
+          console.log(`❌ Tentativa ${attempt} - Nenhum link válido encontrado`)
+          return { success: false, error: "Nenhum link encontrado na resposta" }
+        }
+      } else {
+        console.log(`❌ Tentativa ${attempt} - Erro HTTP: ${response.status}`)
+        return { success: false, error: `Erro HTTP: ${response.status}` }
+      }
+    } catch (error) {
+      console.log(`🔥 Tentativa ${attempt} - Erro: ${error}`)
+      
+      if (error.name === 'AbortError') {
+        return { success: false, error: "Timeout - webhook demorou para responder" }
+      }
+      
+      return { success: false, error: `Erro de rede: ${error.message}` }
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
@@ -65,43 +126,83 @@ export function EmailFormProduction() {
     }
 
     setIsLoading(true)
+    setRetryCount(0)
 
+    const emailToCheck = email.trim().toLowerCase()
+    const maxRetries = 3
+    let lastError = ""
+
+    // SISTEMA DE RETRY ROBUSTO
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      setRetryCount(attempt)
+      
+      // Mostrar progresso para o usuário
+      if (attempt > 1) {
+        setError(`Tentativa ${attempt} de ${maxRetries}... Aguarde.`)
+      }
+
+      const result = await callWebhook(emailToCheck, attempt)
+
+      if (result.success && result.link) {
+        console.log(`🎯 SUCESSO na tentativa ${attempt}!`)
+        window.location.href = `/oferta?link=${encodeURIComponent(result.link)}`
+        return
+      } else {
+        lastError = result.error || "Erro desconhecido"
+        console.log(`⚠️ Tentativa ${attempt} falhou: ${lastError}`)
+
+        // Se não é a última tentativa, aguardar antes de tentar novamente
+        if (attempt < maxRetries) {
+          const waitTime = attempt * 2000 // 2s, 4s, 6s...
+          console.log(`⏳ Aguardando ${waitTime}ms antes da próxima tentativa...`)
+          await new Promise(resolve => setTimeout(resolve, waitTime))
+        }
+      }
+    }
+
+    // Se chegou aqui, todas as tentativas falharam
+    console.log(`❌ TODAS AS ${maxRetries} TENTATIVAS FALHARAM`)
+    console.log(`🔥 Último erro: ${lastError}`)
+
+    // FALLBACK: Tentar via API route como última tentativa
+    console.log("🔄 Tentando via API route como fallback...")
+    
     try {
-      const response = await fetch("https://hook.us2.make.com/eliye1ga4lft52hgp86w5g3neleyyidg", {
+      const apiResponse = await fetch("/api/verificar-email", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-make-apikey": "sk_live_a8eP2f5zT7kL9mQvR3dXw6jV0nSbUdFyMZxLgQvKhPtBrC1dW8EeSx9aGhTzRm0L",
-          "User-Agent": "RafaAcademy-Production/1.0",
-          Accept: "application/json",
         },
-        body: JSON.stringify({
-          email: email.trim().toLowerCase(),
-          timestamp: new Date().toISOString(),
-        }),
+        body: JSON.stringify({ email: emailToCheck }),
       })
 
-      if (response.ok) {
-        const responseText = await response.text()
-        const link = extractLink(responseText)
+      if (apiResponse.ok) {
+        const apiResult = await apiResponse.json()
+        console.log("📊 API route resultado:", apiResult)
 
-        // SÓ VAI PARA OFERTA SE REALMENTE ENCONTROU UM LINK VÁLIDO
-        if (link && link.trim() !== "" && link.includes("http")) {
-          window.location.href = `/oferta?link=${encodeURIComponent(link)}`
-        } else {
-          // SE NÃO ENCONTROU LINK VÁLIDO = NÃO ENCONTRADO
-          window.location.href = "/nao-encontrado"
+        if (apiResult.found && apiResult.link) {
+          console.log("✅ API route encontrou o link!")
+          window.location.href = `/oferta?link=${encodeURIComponent(apiResult.link)}`
+          return
         }
-      } else {
-        // QUALQUER STATUS DIFERENTE DE 200 = NÃO ENCONTRADO
-        window.location.href = "/nao-encontrado"
       }
-    } catch (error) {
-      // ERRO NA REQUISIÇÃO = NÃO ENCONTRADO
-      window.location.href = "/nao-encontrado"
-    } finally {
-      setIsLoading(false)
+    } catch (apiError) {
+      console.log("🔥 API route também falhou:", apiError)
     }
+
+    // Se tudo falhou, ir para não encontrado
+    console.log("❌ Redirecionando para /nao-encontrado")
+    window.location.href = "/nao-encontrado"
+
+    setIsLoading(false)
+  }
+
+  const getButtonText = () => {
+    if (!isLoading) return "Descobrir oferta"
+    
+    if (retryCount === 0) return "Verificando..."
+    
+    return `Tentativa ${retryCount}/3...`
   }
 
   return (
@@ -116,13 +217,17 @@ export function EmailFormProduction() {
           disabled={isLoading}
           className="h-12 text-center bg-white/10 border-white/20 text-white placeholder:text-gray-400 focus:border-cyan-400 focus:ring-cyan-400 text-sm"
         />
-        {error && <p className="text-red-400 text-sm text-center">{error}</p>}
+        {error && (
+          <p className={`text-sm text-center ${error.includes("Tentativa") ? "text-yellow-400" : "text-red-400"}`}>
+            {error}
+          </p>
+        )}
         <Button
           type="submit"
           disabled={isLoading || !email}
           className="w-full h-12 bg-cyan-500 hover:bg-cyan-600 text-white font-semibold text-sm transition-colors disabled:opacity-50"
         >
-          {isLoading ? "Verificando..." : "Descobrir oferta"}
+          {getButtonText()}
         </Button>
       </form>
     </div>
